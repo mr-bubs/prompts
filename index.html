@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Prompt Index</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{
+    --bg: #131016;
+    --bg-raised: #1a1620;
+    --bg-card: #1d1824;
+    --line: #2c2534;
+    --text: #ede8f2;
+    --text-dim: #9a90a8;
+    --text-faint: #675f74;
+    --shawna: #b06bd6;
+    --shawna-dim: #6b3d84;
+    --mira: #5fae7a;
+    --mira-dim: #3a6b4c;
+    --accent: #e8c34a;
+    --radius: 14px;
+  }
+  *{ box-sizing: border-box; }
+  html{ -webkit-tap-highlight-color: transparent; }
+  body{
+    margin:0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    padding-bottom: 100px;
+  }
+  ::selection{ background: var(--shawna-dim); color: #fff; }
+
+  /* Header */
+  header{
+    position: sticky; top:0; z-index: 20;
+    background: rgba(19,16,22,0.92);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--line);
+    padding: 18px 20px 14px;
+  }
+  .header-top{
+    display:flex; align-items:baseline; justify-content:space-between; gap: 12px;
+  }
+  h1{
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700;
+    font-size: 22px;
+    letter-spacing: -0.02em;
+    margin: 0;
+  }
+  h1 .index{
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 400;
+    font-size: 12px;
+    color: var(--text-faint);
+    display:block;
+    margin-top: 2px;
+    letter-spacing: 0.04em;
+  }
+  .count-tag{
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--text-dim);
+    border: 1px solid var(--line);
+    border-radius: 20px;
+    padding: 4px 10px;
+    white-space: nowrap;
+  }
+
+  /* Filters */
+  .filters{
+    display:flex; gap: 8px; margin-top: 14px; overflow-x: auto;
+    scrollbar-width: none; padding-bottom: 2px;
+  }
+  .filters::-webkit-scrollbar{ display:none; }
+  .chip{
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    padding: 7px 14px;
+    border-radius: 20px;
+    border: 1px solid var(--line);
+    background: var(--bg-raised);
+    color: var(--text-dim);
+    white-space: nowrap;
+    cursor: pointer;
+    transition: all .15s ease;
+    flex-shrink: 0;
+  }
+  .chip.active[data-c="all"]{ background: var(--text); color: var(--bg); border-color: var(--text); }
+  .chip.active[data-c="Shawna"]{ background: var(--shawna); color: #1a0e22; border-color: var(--shawna); }
+  .chip.active[data-c="Mira"]{ background: var(--mira); color: #0e1f14; border-color: var(--mira); }
+
+  .search-row{ margin-top: 10px; }
+  .search-row input{
+    width: 100%;
+    background: var(--bg-raised);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 10px 14px;
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+  }
+  .search-row input::placeholder{ color: var(--text-faint); }
+  .search-row input:focus{ outline: none; border-color: var(--shawna-dim); }
+
+  /* Gallery */
+  main{ padding: 18px 16px 0; max-width: 720px; margin: 0 auto; }
+  .grid{
+    display:grid;
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+  @media(min-width: 640px){
+    .grid{ grid-template-columns: 1fr 1fr; }
+  }
+
+  .card{
+    background: var(--bg-card);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    overflow: hidden;
+    border-left: 3px solid var(--line);
+  }
+  .card.Shawna{ border-left-color: var(--shawna); }
+  .card.Mira{ border-left-color: var(--mira); }
+
+  .card img{
+    width: 100%; display:block; aspect-ratio: 9/14; object-fit: cover;
+    background: var(--bg-raised);
+  }
+  .card-body{ padding: 12px 14px 14px; }
+  .card-meta{
+    display:flex; align-items:center; gap: 8px; margin-bottom: 8px; flex-wrap: wrap;
+  }
+  .tag{
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10.5px;
+    letter-spacing: 0.03em;
+    padding: 3px 8px;
+    border-radius: 6px;
+    text-transform: uppercase;
+  }
+  .tag.character.Shawna{ background: rgba(176,107,214,0.15); color: var(--shawna); }
+  .tag.character.Mira{ background: rgba(95,174,122,0.15); color: var(--mira); }
+  .tag.platform{ background: var(--bg-raised); color: var(--text-dim); border: 1px solid var(--line); }
+
+  .template-name{
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 600;
+    font-size: 15px;
+    margin: 0 0 6px;
+  }
+  .prompt-text{
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--text-dim);
+    max-height: 4.5em;
+    overflow: hidden;
+    position: relative;
+    cursor: pointer;
+  }
+  .prompt-text.expanded{ max-height: none; }
+  .notes{
+    font-size: 12px;
+    color: var(--text-faint);
+    margin-top: 8px;
+    font-style: italic;
+  }
+  .card-actions{
+    display:flex; gap: 8px; margin-top: 10px;
+  }
+  .btn-copy{
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    background: var(--bg-raised);
+    border: 1px solid var(--line);
+    color: var(--text-dim);
+    padding: 6px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+  }
+  .btn-copy:active{ background: var(--line); }
+  .btn-copy.copied{ color: var(--accent); border-color: var(--accent); }
+
+  .empty-state{
+    text-align:center; padding: 60px 20px; color: var(--text-faint);
+  }
+  .empty-state .glyph{ font-size: 32px; margin-bottom: 10px; }
+  .empty-state p{ font-family: 'JetBrains Mono', monospace; font-size: 13px; }
+
+  /* FAB */
+  .fab{
+    position: fixed; right: 20px; bottom: 24px; z-index: 30;
+    width: 56px; height: 56px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--shawna), var(--mira));
+    border: none; color: #100c14;
+    font-size: 26px; font-weight: 600;
+    display:flex; align-items:center; justify-content:center;
+    box-shadow: 0 8px 24px rgba(176,107,214,0.35);
+    cursor:pointer;
+  }
+  .fab:active{ transform: scale(0.94); }
+
+  /* Modal */
+  .modal-overlay{
+    position: fixed; inset:0; background: rgba(10,8,12,0.7);
+    backdrop-filter: blur(3px);
+    z-index: 40; display:none;
+    align-items: flex-end;
+  }
+  .modal-overlay.open{ display:flex; }
+  .modal{
+    background: var(--bg-raised);
+    width: 100%;
+    max-height: 92vh;
+    overflow-y: auto;
+    border-radius: 20px 20px 0 0;
+    border-top: 1px solid var(--line);
+    padding: 18px 18px 30px;
+    animation: slideUp .25s ease;
+  }
+  @keyframes slideUp{ from{ transform: translateY(30px); opacity:0; } to{ transform: translateY(0); opacity:1; } }
+  .modal-header{
+    display:flex; justify-content:space-between; align-items:center; margin-bottom: 16px;
+  }
+  .modal-header h2{
+    font-family:'Space Grotesk', sans-serif; font-size: 18px; margin:0;
+  }
+  .modal-close{
+    background:none; border:none; color: var(--text-dim); font-size: 22px; cursor:pointer; padding: 4px 8px;
+  }
+  label{
+    display:block; font-family:'JetBrains Mono', monospace; font-size: 11px;
+    color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.04em;
+    margin: 16px 0 6px;
+  }
+  label:first-of-type{ margin-top: 0; }
+  input[type=text], textarea, select{
+    width:100%; background: var(--bg-card); border: 1px solid var(--line);
+    border-radius: 10px; padding: 11px 13px; color: var(--text);
+    font-family: 'Inter', sans-serif; font-size: 14.5px;
+  }
+  textarea{ resize: vertical; min-height: 90px; line-height: 1.5; }
+  input:focus, textarea:focus, select:focus{ outline:none; border-color: var(--shawna-dim); }
+  select{ appearance: none; -webkit-appearance:none; background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%239a90a8' stroke-width='2'%3e%3cpath d='M6 9l6 6 6-6'/%3e%3c/svg%3e"); background-repeat:no-repeat; background-position: right 12px center; }
+
+  .char-toggle{ display:flex; gap:8px; }
+  .char-toggle button{
+    flex:1; padding: 12px; border-radius: 10px; border: 1px solid var(--line);
+    background: var(--bg-card); color: var(--text-dim); font-family:'Space Grotesk',sans-serif;
+    font-weight:600; font-size: 14px; cursor:pointer;
+  }
+  .char-toggle button.sel[data-c="Shawna"]{ background: rgba(176,107,214,0.18); border-color: var(--shawna); color: var(--shawna); }
+  .char-toggle button.sel[data-c="Mira"]{ background: rgba(95,174,122,0.18); border-color: var(--mira); color: var(--mira); }
+
+  .file-drop{
+    border: 1.5px dashed var(--line); border-radius: 12px; padding: 22px;
+    text-align:center; color: var(--text-faint); font-size: 13px; cursor:pointer;
+    position: relative;
+  }
+  .file-drop input{ position:absolute; inset:0; opacity:0; cursor:pointer; }
+  .file-drop.has-file{ border-style: solid; border-color: var(--mira-dim); color: var(--mira); }
+  .preview-img{ max-width: 100%; max-height: 200px; border-radius: 10px; margin-top: 10px; display:none; }
+
+  .submit-btn{
+    width:100%; margin-top: 22px; padding: 14px; border-radius: 12px; border:none;
+    background: var(--text); color: var(--bg); font-family:'Space Grotesk',sans-serif;
+    font-weight: 700; font-size: 15px; cursor:pointer;
+  }
+  .submit-btn:disabled{ opacity: 0.5; }
+  .form-msg{ font-family:'JetBrains Mono', monospace; font-size: 12px; margin-top: 10px; text-align:center; min-height: 16px; }
+  .form-msg.error{ color: #e06b6b; }
+  .form-msg.ok{ color: var(--mira); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-top">
+    <h1>Prompt Index<span class="index">Shawna & Mira / Template Archive</span></h1>
+    <span class="count-tag" id="countTag">— entries</span>
+  </div>
+  <div class="filters">
+    <div class="chip active" data-c="all" onclick="setFilter('all')">All</div>
+    <div class="chip" data-c="Shawna" onclick="setFilter('Shawna')">Shawna</div>
+    <div class="chip" data-c="Mira" onclick="setFilter('Mira')">Mira</div>
+  </div>
+  <div class="search-row">
+    <input type="text" id="searchInput" placeholder="Search template, prompt, notes..." oninput="renderGrid()">
+  </div>
+</header>
+
+<main>
+  <div class="grid" id="grid"></div>
+  <div class="empty-state" id="emptyState" style="display:none">
+    <div class="glyph">◌</div>
+    <p>NO ENTRIES YET — TAP + TO ADD ONE</p>
+  </div>
+</main>
+
+<button class="fab" onclick="openModal()">+</button>
+
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>New entry</h2>
+      <button class="modal-close" onclick="closeModal()">×</button>
+    </div>
+
+    <label>Character</label>
+    <div class="char-toggle">
+      <button type="button" data-c="Shawna" onclick="selectChar('Shawna')">Shawna</button>
+      <button type="button" data-c="Mira" onclick="selectChar('Mira')">Mira</button>
+    </div>
+
+    <label>Template name</label>
+    <input type="text" id="f_template" placeholder="e.g. Poolside lounge chair">
+
+    <label>Prompt text</label>
+    <textarea id="f_prompt" placeholder="Paste the full locked prompt..."></textarea>
+
+    <label>Platform</label>
+    <select id="f_platform">
+      <option value="Gemini">Gemini</option>
+      <option value="Flow">Google Flow</option>
+      <option value="Kling">Kling</option>
+      <option value="ChatGPT">ChatGPT</option>
+      <option value="Other">Other</option>
+    </select>
+
+    <label>Image</label>
+    <div class="file-drop" id="fileDrop">
+      <span id="fileDropText">Tap to choose an image</span>
+      <input type="file" id="f_image" accept="image/*">
+    </div>
+    <img class="preview-img" id="previewImg">
+
+    <label>Notes <span style="text-transform:none; opacity:0.6;">(optional — what worked / failed)</span></label>
+    <textarea id="f_notes" style="min-height:60px;" placeholder="Optional notes..."></textarea>
+
+    <button class="submit-btn" id="submitBtn" onclick="submitEntry()">Save entry</button>
+    <div class="form-msg" id="formMsg"></div>
+  </div>
+</div>
+
+<script>
+  const SUPABASE_URL = "https://cxvinrcwagrherugqcoy.supabase.co";
+  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN4dmlucmN3YWdyaGVydWdxY295Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY0Nzc5MDIsImV4cCI6MjEwMjA1MzkwMn0.ke5EVLpoOG4QxFSdlAZMe_9UkXauiXefbJfx1oyst7s";
+  const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  let entries = [];
+  let activeFilter = "all";
+  let selectedChar = null;
+  let selectedFile = null;
+
+  async function loadEntries(){
+    const { data, error } = await sb.from('prompts').select('*').order('created_at', { ascending: false });
+    if(error){ console.error(error); return; }
+    entries = data || [];
+    renderGrid();
+  }
+
+  function setFilter(c){
+    activeFilter = c;
+    document.querySelectorAll('.chip').forEach(el => el.classList.toggle('active', el.dataset.c === c));
+    renderGrid();
+  }
+
+  function renderGrid(){
+    const grid = document.getElementById('grid');
+    const empty = document.getElementById('emptyState');
+    const q = document.getElementById('searchInput').value.trim().toLowerCase();
+
+    let filtered = entries.filter(e => activeFilter === 'all' || e.character === activeFilter);
+    if(q){
+      filtered = filtered.filter(e =>
+        (e.template_name||'').toLowerCase().includes(q) ||
+        (e.prompt_text||'').toLowerCase().includes(q) ||
+        (e.notes||'').toLowerCase().includes(q)
+      );
+    }
+
+    document.getElementById('countTag').textContent = entries.length + (entries.length === 1 ? ' entry' : ' entries');
+
+    if(filtered.length === 0){
+      grid.innerHTML = '';
+      empty.style.display = 'block';
+      return;
+    }
+    empty.style.display = 'none';
+
+    grid.innerHTML = filtered.map(e => `
+      <div class="card ${e.character}">
+        ${e.image_url ? `<img src="${e.image_url}" loading="lazy" alt="${escapeHtml(e.template_name||'')}">` : ''}
+        <div class="card-body">
+          <div class="card-meta">
+            <span class="tag character ${e.character}">${e.character}</span>
+            <span class="tag platform">${e.platform||'—'}</span>
+          </div>
+          <p class="template-name">${escapeHtml(e.template_name || 'Untitled')}</p>
+          <p class="prompt-text" onclick="this.classList.toggle('expanded')">${escapeHtml(e.prompt_text||'')}</p>
+          ${e.notes ? `<p class="notes">${escapeHtml(e.notes)}</p>` : ''}
+          <div class="card-actions">
+            <button class="btn-copy" onclick="copyPrompt(this, ${JSON.stringify(e.prompt_text||'').replace(/"/g,'&quot;')})">Copy prompt</button>
+          </div>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function copyPrompt(btn, text){
+    navigator.clipboard.writeText(text).then(() => {
+      const orig = btn.textContent;
+      btn.textContent = 'Copied ✓';
+      btn.classList.add('copied');
+      setTimeout(() => { btn.textContent = orig; btn.classList.remove('copied'); }, 1500);
+    });
+  }
+
+  function escapeHtml(str){
+    const d = document.createElement('div');
+    d.textContent = str;
+    return d.innerHTML;
+  }
+
+  // Modal
+  function openModal(){
+    document.getElementById('modalOverlay').classList.add('open');
+  }
+  function closeModal(){
+    document.getElementById('modalOverlay').classList.remove('open');
+    resetForm();
+  }
+  function selectChar(c){
+    selectedChar = c;
+    document.querySelectorAll('.char-toggle button').forEach(b => b.classList.toggle('sel', b.dataset.c === c));
+  }
+
+  document.getElementById('f_image').addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if(!file) return;
+    selectedFile = file;
+    document.getElementById('fileDrop').classList.add('has-file');
+    document.getElementById('fileDropText').textContent = file.name;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const img = document.getElementById('previewImg');
+      img.src = ev.target.result;
+      img.style.display = 'block';
+    };
+    reader.readAsDataURL(file);
+  });
+
+  function resetForm(){
+    selectedChar = null; selectedFile = null;
+    document.querySelectorAll('.char-toggle button').forEach(b => b.classList.remove('sel'));
+    document.getElementById('f_template').value = '';
+    document.getElementById('f_prompt').value = '';
+    document.getElementById('f_notes').value = '';
+    document.getElementById('f_platform').value = 'Gemini';
+    document.getElementById('f_image').value = '';
+    document.getElementById('fileDrop').classList.remove('has-file');
+    document.getElementById('fileDropText').textContent = 'Tap to choose an image';
+    document.getElementById('previewImg').style.display = 'none';
+    document.getElementById('formMsg').textContent = '';
+    document.getElementById('formMsg').className = 'form-msg';
+  }
+
+  async function submitEntry(){
+    const msg = document.getElementById('formMsg');
+    const btn = document.getElementById('submitBtn');
+    const template = document.getElementById('f_template').value.trim();
+    const prompt = document.getElementById('f_prompt').value.trim();
+    const platform = document.getElementById('f_platform').value;
+    const notes = document.getElementById('f_notes').value.trim();
+
+    if(!selectedChar){ msg.textContent = 'Pick a character.'; msg.className = 'form-msg error'; return; }
+    if(!template || !prompt){ msg.textContent = 'Template name and prompt are required.'; msg.className = 'form-msg error'; return; }
+
+    btn.disabled = true;
+    msg.textContent = 'Saving...';
+    msg.className = 'form-msg';
+
+    let imageUrl = null;
+    try{
+      if(selectedFile){
+        const ext = selectedFile.name.split('.').pop();
+        const path = `${selectedChar.toLowerCase()}/${Date.now()}.${ext}`;
+        const { error: upErr } = await sb.storage.from('images').upload(path, selectedFile);
+        if(upErr) throw upErr;
+        const { data: pub } = sb.storage.from('images').getPublicUrl(path);
+        imageUrl = pub.publicUrl;
+      }
+
+      const { error: insErr } = await sb.from('prompts').insert({
+        character: selectedChar,
+        template_name: template,
+        prompt_text: prompt,
+        platform: platform,
+        image_url: imageUrl,
+        notes: notes || null
+      });
+      if(insErr) throw insErr;
+
+      msg.textContent = 'Saved ✓';
+      msg.className = 'form-msg ok';
+      await loadEntries();
+      setTimeout(closeModal, 600);
+    }catch(err){
+      console.error(err);
+      msg.textContent = 'Error: ' + (err.message || 'something went wrong');
+      msg.className = 'form-msg error';
+    }finally{
+      btn.disabled = false;
+    }
+  }
+
+  loadEntries();
+</script>
+</body>
+</html>
