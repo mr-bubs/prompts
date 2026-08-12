@@ -111,14 +111,17 @@
   .search-row input:focus{ outline: none; border-color: var(--shawna-dim); }
 
   /* Gallery */
-  main{ padding: 18px 16px 0; max-width: 720px; margin: 0 auto; }
+  main{ padding: 18px 16px 0; max-width: 900px; margin: 0 auto; }
   .grid{
     display:grid;
-    grid-template-columns: 1fr;
-    gap: 14px;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
   }
   @media(min-width: 640px){
-    .grid{ grid-template-columns: 1fr 1fr; }
+    .grid{ grid-template-columns: repeat(3, 1fr); gap: 14px; }
+  }
+  @media(min-width: 960px){
+    .grid{ grid-template-columns: repeat(4, 1fr); }
   }
 
   .card{
@@ -127,23 +130,39 @@
     border-radius: var(--radius);
     overflow: hidden;
     border-left: 3px solid var(--line);
+    cursor: pointer;
   }
+  .card:active{ opacity: 0.85; }
   .card.Shawna{ border-left-color: var(--shawna); }
   .card.Mira{ border-left-color: var(--mira); }
 
-  .card img{
-    width: 100%; display:block; aspect-ratio: 9/14; object-fit: cover;
+  .card-thumbs{
+    display:grid; grid-template-columns: 1fr; gap: 2px;
     background: var(--bg-raised);
   }
-  .card-body{ padding: 12px 14px 14px; }
+  .card-thumbs.multi{ grid-template-columns: 1fr 1fr; }
+  .card-thumbs img{
+    width: 100%; display:block; aspect-ratio: 1/1; object-fit: cover;
+    background: var(--bg-raised);
+  }
+  .img-count-badge{
+    position:absolute; top:8px; right:8px;
+    background: rgba(10,8,12,0.72); color:#fff;
+    font-family:'JetBrains Mono', monospace; font-size: 10.5px;
+    padding: 3px 7px; border-radius: 20px;
+    backdrop-filter: blur(4px);
+  }
+  .card-thumbs-wrap{ position: relative; }
+
+  .card-body{ padding: 10px 12px 12px; }
   .card-meta{
-    display:flex; align-items:center; gap: 8px; margin-bottom: 8px; flex-wrap: wrap;
+    display:flex; align-items:center; gap: 6px; margin-bottom: 6px; flex-wrap: wrap;
   }
   .tag{
     font-family: 'JetBrains Mono', monospace;
-    font-size: 10.5px;
+    font-size: 10px;
     letter-spacing: 0.03em;
-    padding: 3px 8px;
+    padding: 3px 7px;
     border-radius: 6px;
     text-transform: uppercase;
   }
@@ -154,43 +173,14 @@
   .template-name{
     font-family: 'Space Grotesk', sans-serif;
     font-weight: 600;
-    font-size: 15px;
-    margin: 0 0 6px;
+    font-size: 13.5px;
+    margin: 0;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   }
-  .prompt-text{
-    font-size: 13px;
-    line-height: 1.5;
-    color: var(--text-dim);
-    max-height: 4.5em;
-    overflow: hidden;
-    position: relative;
-    cursor: pointer;
-  }
-  .prompt-text.expanded{ max-height: none; }
-  .notes{
-    font-size: 12px;
-    color: var(--text-faint);
-    margin-top: 8px;
-    font-style: italic;
-  }
-  .card-actions{
-    display:flex; gap: 8px; margin-top: 10px;
-  }
-  .btn-copy{
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 11px;
-    background: var(--bg-raised);
-    border: 1px solid var(--line);
-    color: var(--text-dim);
-    padding: 6px 12px;
-    border-radius: 8px;
-    cursor: pointer;
-  }
-  .btn-copy:active{ background: var(--line); }
-  .btn-copy.copied{ color: var(--accent); border-color: var(--accent); }
 
   .empty-state{
     text-align:center; padding: 60px 20px; color: var(--text-faint);
+    grid-column: 1 / -1;
   }
   .empty-state .glyph{ font-size: 32px; margin-bottom: 10px; }
   .empty-state p{ font-family: 'JetBrains Mono', monospace; font-size: 13px; }
@@ -267,7 +257,12 @@
   }
   .file-drop input{ position:absolute; inset:0; opacity:0; cursor:pointer; }
   .file-drop.has-file{ border-style: solid; border-color: var(--mira-dim); color: var(--mira); }
-  .preview-img{ max-width: 100%; max-height: 200px; border-radius: 10px; margin-top: 10px; display:none; }
+  .preview-grid{
+    display:grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-top: 10px;
+  }
+  .preview-grid img{
+    width:100%; aspect-ratio: 1/1; object-fit: cover; border-radius: 8px;
+  }
 
   .submit-btn{
     width:100%; margin-top: 22px; padding: 14px; border-radius: 12px; border:none;
@@ -284,7 +279,42 @@
     font-family:'JetBrains Mono', monospace; font-size: 11px;
     text-decoration: underline; cursor:pointer; padding: 2px 4px;
   }
-  .fab[disabled]{ display:none; }
+
+  /* Detail modal */
+  .detail-imgs{
+    display:grid; grid-template-columns: 1fr; gap: 6px; margin-bottom: 16px;
+    border-radius: 12px; overflow:hidden;
+  }
+  .detail-imgs.multi{ grid-template-columns: 1fr 1fr; }
+  .detail-imgs img{ width:100%; display:block; aspect-ratio: 1/1; object-fit: cover; }
+  .detail-tags{ display:flex; gap:6px; margin-bottom: 10px; flex-wrap:wrap; }
+  .detail-template{
+    font-family:'Space Grotesk', sans-serif; font-weight:700; font-size: 19px; margin: 0 0 12px;
+  }
+  .detail-label{
+    font-family:'JetBrains Mono', monospace; font-size: 11px; color: var(--text-dim);
+    text-transform: uppercase; letter-spacing: 0.04em; margin: 16px 0 6px;
+  }
+  .detail-label:first-of-type{ margin-top: 0; }
+  .detail-prompt{
+    font-size: 14px; line-height: 1.6; color: var(--text); white-space: pre-wrap;
+    background: var(--bg-card); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px;
+  }
+  .detail-notes{ font-size: 13px; color: var(--text-dim); font-style: italic; }
+  .btn-copy{
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    background: var(--bg-raised);
+    border: 1px solid var(--line);
+    color: var(--text-dim);
+    padding: 9px 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    margin-top: 14px;
+    width: 100%;
+  }
+  .btn-copy:active{ background: var(--line); }
+  .btn-copy.copied{ color: var(--accent); border-color: var(--accent); }
 </style>
 </head>
 <body>
@@ -294,8 +324,8 @@
     <h1>Prompt Index<span class="index">Shawna & Mira / Template Archive</span></h1>
     <span class="count-tag" id="countTag">— entries</span>
   </div>
-  <div id="authRow" style="margin-top:10px; display:flex; justify-content:flex-end;">
-    <button class="auth-link" id="authLink" onclick="handleAuthClick()">Sign in</button>
+  <div id="authRow" style="margin-top:10px; display:none; justify-content:flex-end;">
+    <button class="auth-link" id="authLink" onclick="handleAuthClick()">Sign out</button>
   </div>
   <div class="filters">
     <div class="chip active" data-c="all" onclick="setFilter('all')">All</div>
@@ -315,7 +345,7 @@
   </div>
 </main>
 
-<button class="fab" id="fabBtn" onclick="openModal()" disabled>+</button>
+<button class="fab" id="fabBtn" onclick="openModal()">+</button>
 
 <div class="modal-overlay" id="loginOverlay">
   <div class="modal">
@@ -360,18 +390,28 @@
       <option value="Other">Other</option>
     </select>
 
-    <label>Image</label>
+    <label>Images <span style="text-transform:none; opacity:0.6;">(select multiple if you have several for this prompt)</span></label>
     <div class="file-drop" id="fileDrop">
-      <span id="fileDropText">Tap to choose an image</span>
-      <input type="file" id="f_image" accept="image/*">
+      <span id="fileDropText">Tap to choose image(s)</span>
+      <input type="file" id="f_image" accept="image/*" multiple>
     </div>
-    <img class="preview-img" id="previewImg">
+    <div class="preview-grid" id="previewGrid"></div>
 
     <label>Notes <span style="text-transform:none; opacity:0.6;">(optional — what worked / failed)</span></label>
     <textarea id="f_notes" style="min-height:60px;" placeholder="Optional notes..."></textarea>
 
     <button class="submit-btn" id="submitBtn" onclick="submitEntry()">Save entry</button>
     <div class="form-msg" id="formMsg"></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="detailOverlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>Entry</h2>
+      <button class="modal-close" onclick="closeDetailModal()">×</button>
+    </div>
+    <div id="detailContent"></div>
   </div>
 </div>
 
@@ -383,7 +423,7 @@
   let entries = [];
   let activeFilter = "all";
   let selectedChar = null;
-  let selectedFile = null;
+  let selectedFiles = [];
   let currentSession = null;
 
   // ---- Auth ----
@@ -397,14 +437,11 @@
 
   function updateAuthUI(session){
     currentSession = session;
-    const link = document.getElementById('authLink');
-    const fab = document.getElementById('fabBtn');
+    const authRow = document.getElementById('authRow');
     if(session){
-      link.textContent = 'Sign out';
-      fab.disabled = false;
+      authRow.style.display = 'flex';
     }else{
-      link.textContent = 'Sign in';
-      fab.disabled = true;
+      authRow.style.display = 'none';
     }
   }
 
@@ -479,23 +516,34 @@
     }
     empty.style.display = 'none';
 
-    grid.innerHTML = filtered.map(e => `
-      <div class="card ${e.character}">
-        ${e.image_url ? `<img src="${e.image_url}" loading="lazy" alt="${escapeHtml(e.template_name||'')}">` : ''}
+    grid.innerHTML = filtered.map(e => {
+      const urls = getImageUrls(e);
+      const isMulti = urls.length > 1;
+      const thumbsHtml = urls.length
+        ? `<div class="card-thumbs-wrap">
+             <div class="card-thumbs ${isMulti ? 'multi' : ''}">
+               ${urls.slice(0,4).map(u => `<img src="${u}" loading="lazy" alt="${escapeHtml(e.template_name||'')}">`).join('')}
+             </div>
+             ${isMulti ? `<span class="img-count-badge">${urls.length}</span>` : ''}
+           </div>`
+        : '';
+      return `
+      <div class="card ${e.character}" onclick="openDetail('${e.id}')">
+        ${thumbsHtml}
         <div class="card-body">
           <div class="card-meta">
             <span class="tag character ${e.character}">${e.character}</span>
-            <span class="tag platform">${e.platform||'—'}</span>
           </div>
           <p class="template-name">${escapeHtml(e.template_name || 'Untitled')}</p>
-          <p class="prompt-text" onclick="this.classList.toggle('expanded')">${escapeHtml(e.prompt_text||'')}</p>
-          ${e.notes ? `<p class="notes">${escapeHtml(e.notes)}</p>` : ''}
-          <div class="card-actions">
-            <button class="btn-copy" onclick="copyPrompt(this, ${JSON.stringify(e.prompt_text||'').replace(/"/g,'&quot;')})">Copy prompt</button>
-          </div>
         </div>
       </div>
-    `).join('');
+    `;
+    }).join('');
+  }
+
+  function getImageUrls(e){
+    if(!e.image_url) return [];
+    return e.image_url.split(',').map(u => u.trim()).filter(Boolean);
   }
 
   function copyPrompt(btn, text){
@@ -513,6 +561,33 @@
     return d.innerHTML;
   }
 
+  // Detail modal
+  function openDetail(id){
+    const e = entries.find(en => String(en.id) === String(id));
+    if(!e) return;
+    const urls = getImageUrls(e);
+    const isMulti = urls.length > 1;
+    const html = `
+      ${urls.length ? `<div class="detail-imgs ${isMulti ? 'multi' : ''}">
+        ${urls.map(u => `<img src="${u}" alt="${escapeHtml(e.template_name||'')}">`).join('')}
+      </div>` : ''}
+      <div class="detail-tags">
+        <span class="tag character ${e.character}">${e.character}</span>
+        <span class="tag platform">${e.platform||'—'}</span>
+      </div>
+      <p class="detail-template">${escapeHtml(e.template_name||'Untitled')}</p>
+      <div class="detail-label">Prompt</div>
+      <div class="detail-prompt">${escapeHtml(e.prompt_text||'')}</div>
+      ${e.notes ? `<div class="detail-label">Notes</div><p class="detail-notes">${escapeHtml(e.notes)}</p>` : ''}
+      <button class="btn-copy" id="detailCopyBtn" onclick="copyPrompt(this, ${JSON.stringify(e.prompt_text||'').replace(/"/g,'&quot;')})">Copy prompt</button>
+    `;
+    document.getElementById('detailContent').innerHTML = html;
+    document.getElementById('detailOverlay').classList.add('open');
+  }
+  function closeDetailModal(){
+    document.getElementById('detailOverlay').classList.remove('open');
+  }
+
   // Modal
   function openModal(){
     if(!currentSession){ openLoginModal(); return; }
@@ -528,22 +603,26 @@
   }
 
   document.getElementById('f_image').addEventListener('change', (e) => {
-    const file = e.target.files[0];
-    if(!file) return;
-    selectedFile = file;
+    const files = Array.from(e.target.files || []);
+    if(!files.length) return;
+    selectedFiles = files;
     document.getElementById('fileDrop').classList.add('has-file');
-    document.getElementById('fileDropText').textContent = file.name;
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      const img = document.getElementById('previewImg');
-      img.src = ev.target.result;
-      img.style.display = 'block';
-    };
-    reader.readAsDataURL(file);
+    document.getElementById('fileDropText').textContent = files.length === 1 ? files[0].name : `${files.length} images selected`;
+    const grid = document.getElementById('previewGrid');
+    grid.innerHTML = '';
+    files.forEach(file => {
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const img = document.createElement('img');
+        img.src = ev.target.result;
+        grid.appendChild(img);
+      };
+      reader.readAsDataURL(file);
+    });
   });
 
   function resetForm(){
-    selectedChar = null; selectedFile = null;
+    selectedChar = null; selectedFiles = [];
     document.querySelectorAll('.char-toggle button').forEach(b => b.classList.remove('sel'));
     document.getElementById('f_template').value = '';
     document.getElementById('f_prompt').value = '';
@@ -551,8 +630,8 @@
     document.getElementById('f_platform').value = 'Gemini';
     document.getElementById('f_image').value = '';
     document.getElementById('fileDrop').classList.remove('has-file');
-    document.getElementById('fileDropText').textContent = 'Tap to choose an image';
-    document.getElementById('previewImg').style.display = 'none';
+    document.getElementById('fileDropText').textContent = 'Tap to choose image(s)';
+    document.getElementById('previewGrid').innerHTML = '';
     document.getElementById('formMsg').textContent = '';
     document.getElementById('formMsg').className = 'form-msg';
   }
@@ -569,26 +648,30 @@
     if(!template || !prompt){ msg.textContent = 'Template name and prompt are required.'; msg.className = 'form-msg error'; return; }
 
     btn.disabled = true;
-    msg.textContent = 'Saving...';
-    msg.className = 'form-msg';
 
-    let imageUrl = null;
+    let imageUrls = [];
     try{
-      if(selectedFile){
-        const ext = selectedFile.name.split('.').pop();
-        const path = `${selectedChar.toLowerCase()}/${Date.now()}.${ext}`;
-        const { error: upErr } = await sb.storage.from('images').upload(path, selectedFile);
-        if(upErr) throw upErr;
-        const { data: pub } = sb.storage.from('images').getPublicUrl(path);
-        imageUrl = pub.publicUrl;
+      if(selectedFiles.length){
+        for(let i = 0; i < selectedFiles.length; i++){
+          msg.textContent = `Uploading image ${i+1} of ${selectedFiles.length}...`;
+          msg.className = 'form-msg';
+          const file = selectedFiles[i];
+          const ext = file.name.split('.').pop();
+          const path = `${selectedChar.toLowerCase()}/${Date.now()}-${i}.${ext}`;
+          const { error: upErr } = await sb.storage.from('images').upload(path, file);
+          if(upErr) throw upErr;
+          const { data: pub } = sb.storage.from('images').getPublicUrl(path);
+          imageUrls.push(pub.publicUrl);
+        }
       }
 
+      msg.textContent = 'Saving...';
       const { error: insErr } = await sb.from('prompts').insert({
         character: selectedChar,
         template_name: template,
         prompt_text: prompt,
         platform: platform,
-        image_url: imageUrl,
+        image_url: imageUrls.join(','),
         notes: notes || null
       });
       if(insErr) throw insErr;
