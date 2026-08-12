@@ -130,34 +130,53 @@
     border-radius: var(--radius);
     overflow: hidden;
     border-left: 3px solid var(--line);
-    cursor: pointer;
   }
-  .card:active{ opacity: 0.85; }
   .card.Shawna{ border-left-color: var(--shawna); }
   .card.Mira{ border-left-color: var(--mira); }
 
-  .card-thumbs{
-    display:grid; grid-template-columns: 1fr; gap: 2px;
+  .card-media{
+    position: relative;
+    aspect-ratio: 9/16;
     background: var(--bg-raised);
   }
-  .card-thumbs.multi{ grid-template-columns: 1fr 1fr; }
-  .card-thumbs img{
-    width: 100%; display:block; aspect-ratio: 1/1; object-fit: cover;
-    background: var(--bg-raised);
+  .card-swipe{
+    display:flex; overflow-x:auto; scroll-snap-type:x mandatory;
+    height:100%; width:100%; scrollbar-width:none;
+  }
+  .card-swipe::-webkit-scrollbar{ display:none; }
+  .card-swipe img{
+    flex:0 0 100%; width:100%; height:100%; object-fit:contain;
+    scroll-snap-align:start; background: var(--bg-raised); display:block;
   }
   .img-count-badge{
-    position:absolute; top:8px; right:8px;
+    position:absolute; top:8px; right:8px; z-index:2;
     background: rgba(10,8,12,0.72); color:#fff;
     font-family:'JetBrains Mono', monospace; font-size: 10.5px;
     padding: 3px 7px; border-radius: 20px;
     backdrop-filter: blur(4px);
+    pointer-events: none;
   }
-  .card-thumbs-wrap{ position: relative; }
 
-  .card-body{ padding: 10px 12px 12px; }
-  .card-meta{
-    display:flex; align-items:center; gap: 6px; margin-bottom: 6px; flex-wrap: wrap;
+  .card-overlay{
+    position:absolute; left:0; right:0; bottom:0; z-index:2;
+    padding: 9px 10px;
+    background: rgba(19,16,22,0.5);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border-top: 1px solid rgba(255,255,255,0.08);
+    display:flex; align-items:center; justify-content:space-between; gap: 8px;
+    cursor: pointer;
   }
+  .card-overlay .info{ min-width:0; flex: 1; }
+  .card-overlay .tag{ margin-bottom: 3px; }
+  .copy-icon-btn{
+    flex-shrink:0; width: 30px; height: 30px; border-radius: 50%;
+    background: rgba(255,255,255,0.14); border: 1px solid rgba(255,255,255,0.22);
+    color:#fff; font-size: 14px; display:flex; align-items:center; justify-content:center;
+    cursor:pointer;
+  }
+  .copy-icon-btn.copied{ background: var(--accent); border-color: var(--accent); color:#1a1610; }
+
   .tag{
     font-family: 'JetBrains Mono', monospace;
     font-size: 10px;
@@ -166,13 +185,14 @@
     border-radius: 6px;
     text-transform: uppercase;
   }
-  .tag.character.Shawna{ background: rgba(176,107,214,0.15); color: var(--shawna); }
-  .tag.character.Mira{ background: rgba(95,174,122,0.15); color: var(--mira); }
+  .tag.character.Shawna{ background: rgba(176,107,214,0.28); color: #ecd7fa; }
+  .tag.character.Mira{ background: rgba(95,174,122,0.28); color: #d8f2e1; }
   .tag.platform{ background: var(--bg-raised); color: var(--text-dim); border: 1px solid var(--line); }
 
   .template-name{
     font-family: 'Space Grotesk', sans-serif;
     font-weight: 600;
+
     font-size: 13.5px;
     margin: 0;
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
@@ -519,22 +539,22 @@
     grid.innerHTML = filtered.map(e => {
       const urls = getImageUrls(e);
       const isMulti = urls.length > 1;
-      const thumbsHtml = urls.length
-        ? `<div class="card-thumbs-wrap">
-             <div class="card-thumbs ${isMulti ? 'multi' : ''}">
-               ${urls.slice(0,4).map(u => `<img src="${u}" loading="lazy" alt="${escapeHtml(e.template_name||'')}">`).join('')}
-             </div>
-             ${isMulti ? `<span class="img-count-badge">${urls.length}</span>` : ''}
-           </div>`
-        : '';
       return `
-      <div class="card ${e.character}" onclick="openDetail('${e.id}')">
-        ${thumbsHtml}
-        <div class="card-body">
-          <div class="card-meta">
-            <span class="tag character ${e.character}">${e.character}</span>
+      <div class="card ${e.character}">
+        <div class="card-media" onclick="openDetail('${e.id}')">
+          <div class="card-swipe">
+            ${urls.map(u => `<img src="${u}" loading="lazy" alt="${escapeHtml(e.template_name||'')}">`).join('')}
           </div>
-          <p class="template-name">${escapeHtml(e.template_name || 'Untitled')}</p>
+          ${isMulti ? `<span class="img-count-badge">${urls.length}</span>` : ''}
+          <div class="card-overlay">
+            <div class="info">
+              <span class="tag character ${e.character}">${e.character}</span>
+              <p class="template-name">${escapeHtml(e.template_name || 'Untitled')}</p>
+            </div>
+            <button class="copy-icon-btn" onclick="event.stopPropagation(); copyPromptQuick(this, '${e.id}')" aria-label="Copy prompt">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            </button>
+          </div>
         </div>
       </div>
     `;
@@ -552,6 +572,15 @@
       btn.textContent = 'Copied ✓';
       btn.classList.add('copied');
       setTimeout(() => { btn.textContent = orig; btn.classList.remove('copied'); }, 1500);
+    });
+  }
+
+  function copyPromptQuick(btn, id){
+    const e = entries.find(en => String(en.id) === String(id));
+    if(!e) return;
+    navigator.clipboard.writeText(e.prompt_text || '').then(() => {
+      btn.classList.add('copied');
+      setTimeout(() => { btn.classList.remove('copied'); }, 1200);
     });
   }
 
