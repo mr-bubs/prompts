@@ -278,6 +278,13 @@
   .form-msg{ font-family:'JetBrains Mono', monospace; font-size: 12px; margin-top: 10px; text-align:center; min-height: 16px; }
   .form-msg.error{ color: #e06b6b; }
   .form-msg.ok{ color: var(--mira); }
+
+  .auth-link{
+    background:none; border:none; color: var(--text-faint);
+    font-family:'JetBrains Mono', monospace; font-size: 11px;
+    text-decoration: underline; cursor:pointer; padding: 2px 4px;
+  }
+  .fab[disabled]{ display:none; }
 </style>
 </head>
 <body>
@@ -286,6 +293,9 @@
   <div class="header-top">
     <h1>Prompt Index<span class="index">Shawna & Mira / Template Archive</span></h1>
     <span class="count-tag" id="countTag">— entries</span>
+  </div>
+  <div id="authRow" style="margin-top:10px; display:flex; justify-content:flex-end;">
+    <button class="auth-link" id="authLink" onclick="handleAuthClick()">Sign in</button>
   </div>
   <div class="filters">
     <div class="chip active" data-c="all" onclick="setFilter('all')">All</div>
@@ -305,7 +315,22 @@
   </div>
 </main>
 
-<button class="fab" onclick="openModal()">+</button>
+<button class="fab" id="fabBtn" onclick="openModal()" disabled>+</button>
+
+<div class="modal-overlay" id="loginOverlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>Sign in</h2>
+      <button class="modal-close" onclick="closeLoginModal()">×</button>
+    </div>
+    <label>Email</label>
+    <input type="text" id="login_email" autocapitalize="off" autocomplete="email">
+    <label>Password</label>
+    <input type="text" id="login_password" autocomplete="current-password" style="-webkit-text-security: disc;">
+    <button class="submit-btn" onclick="doLogin()">Sign in</button>
+    <div class="form-msg" id="loginMsg"></div>
+  </div>
+</div>
 
 <div class="modal-overlay" id="modalOverlay">
   <div class="modal">
@@ -359,6 +384,64 @@
   let activeFilter = "all";
   let selectedChar = null;
   let selectedFile = null;
+  let currentSession = null;
+
+  // ---- Auth ----
+  async function initAuth(){
+    const { data: { session } } = await sb.auth.getSession();
+    updateAuthUI(session);
+    sb.auth.onAuthStateChange((_event, session) => {
+      updateAuthUI(session);
+    });
+  }
+
+  function updateAuthUI(session){
+    currentSession = session;
+    const link = document.getElementById('authLink');
+    const fab = document.getElementById('fabBtn');
+    if(session){
+      link.textContent = 'Sign out';
+      fab.disabled = false;
+    }else{
+      link.textContent = 'Sign in';
+      fab.disabled = true;
+    }
+  }
+
+  function handleAuthClick(){
+    if(currentSession){
+      sb.auth.signOut();
+    }else{
+      openLoginModal();
+    }
+  }
+
+  function openLoginModal(){
+    document.getElementById('loginOverlay').classList.add('open');
+  }
+  function closeLoginModal(){
+    document.getElementById('loginOverlay').classList.remove('open');
+    document.getElementById('loginMsg').textContent = '';
+    document.getElementById('loginMsg').className = 'form-msg';
+  }
+
+  async function doLogin(){
+    const email = document.getElementById('login_email').value.trim();
+    const password = document.getElementById('login_password').value;
+    const msg = document.getElementById('loginMsg');
+    if(!email || !password){ msg.textContent = 'Enter email and password.'; msg.className = 'form-msg error'; return; }
+    msg.textContent = 'Signing in...';
+    msg.className = 'form-msg';
+    const { error } = await sb.auth.signInWithPassword({ email, password });
+    if(error){
+      msg.textContent = error.message;
+      msg.className = 'form-msg error';
+    }else{
+      msg.textContent = 'Signed in ✓';
+      msg.className = 'form-msg ok';
+      setTimeout(closeLoginModal, 500);
+    }
+  }
 
   async function loadEntries(){
     const { data, error } = await sb.from('prompts').select('*').order('created_at', { ascending: false });
@@ -432,6 +515,7 @@
 
   // Modal
   function openModal(){
+    if(!currentSession){ openLoginModal(); return; }
     document.getElementById('modalOverlay').classList.add('open');
   }
   function closeModal(){
@@ -522,6 +606,7 @@
     }
   }
 
+  initAuth();
   loadEntries();
 </script>
 </body>
