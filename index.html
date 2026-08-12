@@ -21,6 +21,10 @@
     --shawna-dim: #6b3d84;
     --mira: #5fae7a;
     --mira-dim: #3a6b4c;
+    --layla: #d99a4e;
+    --layla-dim: #8a5f2c;
+    --polly: #5b93d6;
+    --polly-dim: #33578a;
     --accent: #e8c34a;
     --radius: 14px;
   }
@@ -95,6 +99,8 @@
   .chip.active[data-c="all"]{ background: var(--text); color: var(--bg); border-color: var(--text); }
   .chip.active[data-c="Shawna"]{ background: var(--shawna); color: #1a0e22; border-color: var(--shawna); }
   .chip.active[data-c="Mira"]{ background: var(--mira); color: #0e1f14; border-color: var(--mira); }
+  .chip.active[data-c="Layla"]{ background: var(--layla); color: #241705; border-color: var(--layla); }
+  .chip.active[data-c="Polly"]{ background: var(--polly); color: #0a1626; border-color: var(--polly); }
 
   .search-row{ margin-top: 10px; }
   .search-row input{
@@ -133,6 +139,8 @@
   }
   .card.Shawna{ border-left-color: var(--shawna); }
   .card.Mira{ border-left-color: var(--mira); }
+  .card.Layla{ border-left-color: var(--layla); }
+  .card.Polly{ border-left-color: var(--polly); }
 
   .card-media{
     position: relative;
@@ -187,6 +195,8 @@
   }
   .tag.character.Shawna{ background: rgba(176,107,214,0.28); color: #ecd7fa; }
   .tag.character.Mira{ background: rgba(95,174,122,0.28); color: #d8f2e1; }
+  .tag.character.Layla{ background: rgba(217,154,78,0.28); color: #fbe4c3; }
+  .tag.character.Polly{ background: rgba(91,147,214,0.28); color: #d5e6fa; }
   .tag.platform{ background: var(--bg-raised); color: var(--text-dim); border: 1px solid var(--line); }
 
   .template-name{
@@ -261,14 +271,16 @@
   input:focus, textarea:focus, select:focus{ outline:none; border-color: var(--shawna-dim); }
   select{ appearance: none; -webkit-appearance:none; background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%239a90a8' stroke-width='2'%3e%3cpath d='M6 9l6 6 6-6'/%3e%3c/svg%3e"); background-repeat:no-repeat; background-position: right 12px center; }
 
-  .char-toggle{ display:flex; gap:8px; }
+  .char-toggle{ display:grid; grid-template-columns: 1fr 1fr; gap:8px; }
   .char-toggle button{
-    flex:1; padding: 12px; border-radius: 10px; border: 1px solid var(--line);
+    padding: 12px; border-radius: 10px; border: 1px solid var(--line);
     background: var(--bg-card); color: var(--text-dim); font-family:'Space Grotesk',sans-serif;
     font-weight:600; font-size: 14px; cursor:pointer;
   }
   .char-toggle button.sel[data-c="Shawna"]{ background: rgba(176,107,214,0.18); border-color: var(--shawna); color: var(--shawna); }
   .char-toggle button.sel[data-c="Mira"]{ background: rgba(95,174,122,0.18); border-color: var(--mira); color: var(--mira); }
+  .char-toggle button.sel[data-c="Layla"]{ background: rgba(217,154,78,0.18); border-color: var(--layla); color: var(--layla); }
+  .char-toggle button.sel[data-c="Polly"]{ background: rgba(91,147,214,0.18); border-color: var(--polly); color: var(--polly); }
 
   .file-drop{
     border: 1.5px dashed var(--line); border-radius: 12px; padding: 22px;
@@ -427,7 +439,7 @@
 
 <header>
   <div class="header-top">
-    <h1>Prompt Index<span class="index">Shawna & Mira / Template Archive</span></h1>
+    <h1>Prompt Index<span class="index">Shawna, Mira, Layla & Polly / Template Archive</span></h1>
     <span class="count-tag" id="countTag">— entries</span>
   </div>
   <div id="authRow" style="margin-top:10px; display:none; justify-content:flex-end;">
@@ -437,6 +449,8 @@
     <div class="chip active" data-c="all" onclick="setFilter('all')">All</div>
     <div class="chip" data-c="Shawna" onclick="setFilter('Shawna')">Shawna</div>
     <div class="chip" data-c="Mira" onclick="setFilter('Mira')">Mira</div>
+    <div class="chip" data-c="Layla" onclick="setFilter('Layla')">Layla</div>
+    <div class="chip" data-c="Polly" onclick="setFilter('Polly')">Polly</div>
   </div>
   <div class="search-row">
     <input type="text" id="searchInput" placeholder="Search template, prompt, notes..." oninput="renderGrid()">
@@ -479,6 +493,8 @@
     <div class="char-toggle">
       <button type="button" data-c="Shawna" onclick="selectChar('Shawna')">Shawna</button>
       <button type="button" data-c="Mira" onclick="selectChar('Mira')">Mira</button>
+      <button type="button" data-c="Layla" onclick="selectChar('Layla')">Layla</button>
+      <button type="button" data-c="Polly" onclick="selectChar('Polly')">Polly</button>
     </div>
 
     <label>Template name</label>
@@ -593,10 +609,34 @@
   }
 
   async function loadEntries(){
-    const { data, error } = await sb.from('prompts').select('*').order('created_at', { ascending: false });
+    const { data, error } = await sb.from('prompts').select('*');
     if(error){ console.error(error); return; }
-    entries = data || [];
+    entries = interleaveByCharacter(data || []);
     renderGrid();
+  }
+
+  function shuffleArray(arr){
+    for(let i = arr.length - 1; i > 0; i--){
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+  }
+
+  function interleaveByCharacter(list){
+    const groups = {};
+    list.forEach(e => { (groups[e.character] = groups[e.character] || []).push(e); });
+    const keys = shuffleArray(Object.keys(groups));
+    keys.forEach(k => shuffleArray(groups[k]));
+    const result = [];
+    let added = true;
+    while(added){
+      added = false;
+      for(const k of keys){
+        if(groups[k].length){ result.push(groups[k].shift()); added = true; }
+      }
+    }
+    return result;
   }
 
   function setFilter(c){
