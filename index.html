@@ -300,41 +300,91 @@
     text-decoration: underline; cursor:pointer; padding: 2px 4px;
   }
 
-  /* Detail modal */
-  .detail-imgs{
-    display:grid; grid-template-columns: 1fr; gap: 6px; margin-bottom: 16px;
-    border-radius: 12px; overflow:hidden;
+  /* Detail popup (full-screen image viewer) */
+  .detail-overlay{
+    position: fixed; inset:0; z-index: 60; background:#000; display:none;
   }
-  .detail-imgs.multi{ grid-template-columns: 1fr 1fr; }
-  .detail-imgs img{ width:100%; display:block; aspect-ratio: 1/1; object-fit: cover; }
+  .detail-overlay.open{ display:block; }
+  .detail-x{
+    position:absolute; top:14px; right:14px; z-index:10;
+    width:36px; height:36px; border-radius:50%;
+    background: rgba(0,0,0,0.55); border:1px solid rgba(255,255,255,0.2);
+    color:#fff; font-size:20px; line-height:1;
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer;
+  }
+  .detail-stage{
+    position:absolute; inset:0; z-index:1; background:#000;
+  }
+  .detail-swipe{
+    display:flex; width:100%; height:100%; overflow-x:auto;
+    scroll-snap-type:x mandatory; scrollbar-width:none; touch-action: pan-x;
+  }
+  .detail-swipe::-webkit-scrollbar{ display:none; }
+  .detail-swipe .slide{
+    flex:0 0 100%; height:100%; scroll-snap-align:start;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .detail-swipe img{
+    max-width:100%; max-height:100%; object-fit:contain; display:block;
+  }
+  .detail-dots{
+    position:absolute; top:16px; left:0; right:0; z-index:5;
+    display:flex; justify-content:center; gap:5px; pointer-events:none;
+  }
+  .detail-dots .dot{ width:6px; height:6px; border-radius:50%; background: rgba(255,255,255,0.35); }
+  .detail-dots .dot.active{ background:#fff; }
+
+  .detail-scroll{
+    position:absolute; inset:0; z-index:3; overflow-y:auto;
+    -webkit-overflow-scrolling: touch; touch-action: pan-y;
+    scrollbar-width: none;
+  }
+  .detail-scroll::-webkit-scrollbar{ display:none; }
+  .detail-spacer{ height: 58vh; pointer-events:none; }
+  .detail-panel{
+    min-height: 46vh;
+    background: rgba(19,16,22,0.55);
+    backdrop-filter: blur(18px) saturate(160%);
+    -webkit-backdrop-filter: blur(18px) saturate(160%);
+    border-top: 1px solid rgba(255,255,255,0.1);
+    border-radius: 20px 20px 0 0;
+    padding: 10px 18px 50px;
+    pointer-events: auto;
+  }
+  .detail-handle{
+    width: 36px; height: 4px; border-radius: 4px;
+    background: rgba(255,255,255,0.25);
+    margin: 6px auto 14px;
+  }
   .detail-tags{ display:flex; gap:6px; margin-bottom: 10px; flex-wrap:wrap; }
   .detail-template{
     font-family:'Space Grotesk', sans-serif; font-weight:700; font-size: 19px; margin: 0 0 12px;
+    color: #fff;
   }
   .detail-label{
-    font-family:'JetBrains Mono', monospace; font-size: 11px; color: var(--text-dim);
+    font-family:'JetBrains Mono', monospace; font-size: 11px; color: rgba(255,255,255,0.55);
     text-transform: uppercase; letter-spacing: 0.04em; margin: 16px 0 6px;
   }
   .detail-label:first-of-type{ margin-top: 0; }
   .detail-prompt{
-    font-size: 14px; line-height: 1.6; color: var(--text); white-space: pre-wrap;
-    background: var(--bg-card); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px;
+    font-size: 14px; line-height: 1.6; color: #fff; white-space: pre-wrap;
   }
-  .detail-notes{ font-size: 13px; color: var(--text-dim); font-style: italic; }
+  .detail-notes{ font-size: 13px; color: rgba(255,255,255,0.65); font-style: italic; }
   .btn-copy{
     font-family: 'JetBrains Mono', monospace;
     font-size: 12px;
-    background: var(--bg-raised);
-    border: 1px solid var(--line);
-    color: var(--text-dim);
-    padding: 9px 14px;
+    background: rgba(255,255,255,0.12);
+    border: 1px solid rgba(255,255,255,0.22);
+    color: #fff;
+    padding: 10px 14px;
     border-radius: 8px;
     cursor: pointer;
     margin-top: 14px;
     width: 100%;
   }
-  .btn-copy:active{ background: var(--line); }
-  .btn-copy.copied{ color: var(--accent); border-color: var(--accent); }
+  .btn-copy:active{ background: rgba(255,255,255,0.22); }
+  .btn-copy.copied{ background: var(--mira); border-color: var(--mira); color:#0e1f14; }
 </style>
 </head>
 <body>
@@ -425,13 +475,14 @@
   </div>
 </div>
 
-<div class="modal-overlay" id="detailOverlay">
-  <div class="modal">
-    <div class="modal-header">
-      <h2>Entry</h2>
-      <button class="modal-close" onclick="closeDetailModal()">×</button>
+<div class="detail-overlay" id="detailOverlay">
+  <button class="detail-x" onclick="closeDetailModal()" aria-label="Close">×</button>
+  <div class="detail-stage" id="detailStage"></div>
+  <div class="detail-scroll" id="detailScroll">
+    <div class="detail-spacer"></div>
+    <div class="detail-panel" id="detailPanel">
+      <div class="detail-handle"></div>
     </div>
-    <div id="detailContent"></div>
   </div>
 </div>
 
@@ -590,16 +641,33 @@
     return d.innerHTML;
   }
 
-  // Detail modal
+  // Detail popup
   function openDetail(id){
     const e = entries.find(en => String(en.id) === String(id));
     if(!e) return;
     const urls = getImageUrls(e);
     const isMulti = urls.length > 1;
-    const html = `
-      ${urls.length ? `<div class="detail-imgs ${isMulti ? 'multi' : ''}">
-        ${urls.map(u => `<img src="${u}" alt="${escapeHtml(e.template_name||'')}">`).join('')}
-      </div>` : ''}
+
+    const stage = document.getElementById('detailStage');
+    stage.innerHTML = `
+      <div class="detail-swipe">
+        ${urls.map(u => `<div class="slide"><img src="${u}" alt="${escapeHtml(e.template_name||'')}"></div>`).join('')}
+      </div>
+      ${isMulti ? `<div class="detail-dots">${urls.map((_,i) => `<span class="dot ${i===0?'active':''}"></span>`).join('')}</div>` : ''}
+    `;
+
+    if(isMulti){
+      const swipe = stage.querySelector('.detail-swipe');
+      const dots = stage.querySelectorAll('.detail-dots .dot');
+      swipe.addEventListener('scroll', () => {
+        const idx = Math.round(swipe.scrollLeft / swipe.clientWidth);
+        dots.forEach((d,i) => d.classList.toggle('active', i === idx));
+      });
+    }
+
+    const panel = document.getElementById('detailPanel');
+    panel.innerHTML = `
+      <div class="detail-handle"></div>
       <div class="detail-tags">
         <span class="tag character ${e.character}">${e.character}</span>
         <span class="tag platform">${e.platform||'—'}</span>
@@ -608,9 +676,10 @@
       <div class="detail-label">Prompt</div>
       <div class="detail-prompt">${escapeHtml(e.prompt_text||'')}</div>
       ${e.notes ? `<div class="detail-label">Notes</div><p class="detail-notes">${escapeHtml(e.notes)}</p>` : ''}
-      <button class="btn-copy" id="detailCopyBtn" onclick="copyPrompt(this, ${JSON.stringify(e.prompt_text||'').replace(/"/g,'&quot;')})">Copy prompt</button>
+      <button class="btn-copy" onclick="copyPrompt(this, ${JSON.stringify(e.prompt_text||'').replace(/"/g,'&quot;')})">Copy prompt</button>
     `;
-    document.getElementById('detailContent').innerHTML = html;
+
+    document.getElementById('detailScroll').scrollTop = 0;
     document.getElementById('detailOverlay').classList.add('open');
   }
   function closeDetailModal(){
