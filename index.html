@@ -101,6 +101,7 @@
   .chip.active[data-c="Mira"]{ background: var(--mira); color: #0e1f14; border-color: var(--mira); }
   .chip.active[data-c="Layla"]{ background: var(--layla); color: #241705; border-color: var(--layla); }
   .chip.active[data-c="Polly"]{ background: var(--polly); color: #0a1626; border-color: var(--polly); }
+  .chip.active[data-c="Group"]{ background: var(--accent); color: #241c05; border-color: var(--accent); }
 
   .search-row{ margin-top: 10px; }
   .search-row input{
@@ -141,6 +142,7 @@
   .card.Mira{ border-left-color: var(--mira); }
   .card.Layla{ border-left-color: var(--layla); }
   .card.Polly{ border-left-color: var(--polly); }
+  .card.Group{ border-left-color: var(--accent); }
 
   .card-media{
     position: relative;
@@ -197,6 +199,7 @@
   .tag.character.Mira{ background: rgba(95,174,122,0.28); color: #d8f2e1; }
   .tag.character.Layla{ background: rgba(217,154,78,0.28); color: #fbe4c3; }
   .tag.character.Polly{ background: rgba(91,147,214,0.28); color: #d5e6fa; }
+  .tag.character.Group{ background: rgba(232,195,74,0.28); color: #fbe9c2; }
   .tag.platform{ background: var(--bg-raised); color: var(--text-dim); border: 1px solid var(--line); }
 
   .template-name{
@@ -451,6 +454,7 @@
     <div class="chip" data-c="Mira" onclick="setFilter('Mira')">Mira</div>
     <div class="chip" data-c="Layla" onclick="setFilter('Layla')">Layla</div>
     <div class="chip" data-c="Polly" onclick="setFilter('Polly')">Polly</div>
+    <div class="chip" data-c="Group" onclick="setFilter('Group')">Group</div>
   </div>
   <div class="search-row">
     <input type="text" id="searchInput" placeholder="Search template, prompt, notes..." oninput="renderGrid()">
@@ -489,12 +493,12 @@
       <button class="modal-close" onclick="closeModal()">×</button>
     </div>
 
-    <label>Character</label>
+    <label>Character(s) <span style="text-transform:none; opacity:0.6;">(select more than one for a group shot)</span></label>
     <div class="char-toggle">
-      <button type="button" data-c="Shawna" onclick="selectChar('Shawna')">Shawna</button>
-      <button type="button" data-c="Mira" onclick="selectChar('Mira')">Mira</button>
-      <button type="button" data-c="Layla" onclick="selectChar('Layla')">Layla</button>
-      <button type="button" data-c="Polly" onclick="selectChar('Polly')">Polly</button>
+      <button type="button" data-c="Shawna" onclick="toggleChar('Shawna')">Shawna</button>
+      <button type="button" data-c="Mira" onclick="toggleChar('Mira')">Mira</button>
+      <button type="button" data-c="Layla" onclick="toggleChar('Layla')">Layla</button>
+      <button type="button" data-c="Polly" onclick="toggleChar('Polly')">Polly</button>
     </div>
 
     <label>Template name</label>
@@ -547,7 +551,7 @@
 
   let entries = [];
   let activeFilter = "all";
-  let selectedChar = null;
+  let selectedChars = [];
   let selectedFiles = [];
   let currentSession = null;
   let editingId = null;
@@ -625,7 +629,11 @@
 
   function interleaveByCharacter(list){
     const groups = {};
-    list.forEach(e => { (groups[e.character] = groups[e.character] || []).push(e); });
+    list.forEach(e => {
+      const chars = getCharacterList(e);
+      const key = chars.length > 1 ? 'Group' : (chars[0] || 'Unknown');
+      (groups[key] = groups[key] || []).push(e);
+    });
     const keys = shuffleArray(Object.keys(groups));
     keys.forEach(k => shuffleArray(groups[k]));
     const result = [];
@@ -650,7 +658,12 @@
     const empty = document.getElementById('emptyState');
     const q = document.getElementById('searchInput').value.trim().toLowerCase();
 
-    let filtered = entries.filter(e => activeFilter === 'all' || e.character === activeFilter);
+    let filtered = entries.filter(e => {
+      if(activeFilter === 'all') return true;
+      const chars = getCharacterList(e);
+      if(activeFilter === 'Group') return chars.length > 1;
+      return chars.includes(activeFilter);
+    });
     if(q){
       filtered = filtered.filter(e =>
         (e.template_name||'').toLowerCase().includes(q) ||
@@ -671,8 +684,11 @@
     grid.innerHTML = filtered.map(e => {
       const urls = getImageUrls(e);
       const isMulti = urls.length > 1;
+      const chars = getCharacterList(e);
+      const isGroup = chars.length > 1;
+      const cardClass = isGroup ? 'Group' : (chars[0] || '');
       return `
-      <div class="card ${e.character}">
+      <div class="card ${cardClass}">
         <div class="card-media" onclick="openDetail('${e.id}')">
           <div class="card-swipe">
             ${urls.map(u => `<img src="${u}" loading="lazy" alt="${escapeHtml(e.template_name||'')}">`).join('')}
@@ -680,7 +696,7 @@
           ${isMulti ? `<span class="img-count-badge">${urls.length}</span>` : ''}
           <div class="card-overlay">
             <div class="info">
-              <span class="tag character ${e.character}">${e.character}</span>
+              <span class="tag character ${cardClass}">${isGroup ? 'Group' : chars[0]}</span>
               <p class="template-name">${escapeHtml(e.template_name || 'Untitled')}</p>
             </div>
             <button class="copy-icon-btn" onclick="event.stopPropagation(); copyPromptQuick(this, '${e.id}')" aria-label="Copy prompt">
@@ -696,6 +712,11 @@
   function getImageUrls(e){
     if(!e.image_url) return [];
     return e.image_url.split(',').map(u => u.trim()).filter(Boolean);
+  }
+
+  function getCharacterList(e){
+    if(!e.character) return [];
+    return e.character.split(',').map(c => c.trim()).filter(Boolean);
   }
 
   function storagePathFromUrl(url){
@@ -764,7 +785,7 @@
     panel.innerHTML = `
       <div class="detail-handle"></div>
       <div class="detail-tags">
-        <span class="tag character ${e.character}">${e.character}</span>
+        ${getCharacterList(e).map(c => `<span class="tag character ${c}">${c}</span>`).join('')}
         <span class="tag platform">${e.platform||'—'}</span>
       </div>
       <p class="detail-template">${escapeHtml(e.template_name||'Untitled')}</p>
@@ -823,7 +844,8 @@
 
     document.getElementById('modalTitle').textContent = 'Edit entry';
     document.getElementById('submitBtn').textContent = 'Update entry';
-    selectChar(e.character);
+    selectedChars = getCharacterList(e);
+    syncCharButtons();
     document.getElementById('f_template').value = e.template_name || '';
     document.getElementById('f_prompt').value = e.prompt_text || '';
     document.getElementById('f_platform').value = e.platform || 'Gemini';
@@ -857,9 +879,13 @@
     document.getElementById('modalOverlay').classList.remove('open');
     resetForm();
   }
-  function selectChar(c){
-    selectedChar = c;
-    document.querySelectorAll('.char-toggle button').forEach(b => b.classList.toggle('sel', b.dataset.c === c));
+  function toggleChar(c){
+    const idx = selectedChars.indexOf(c);
+    if(idx === -1) selectedChars.push(c); else selectedChars.splice(idx, 1);
+    syncCharButtons();
+  }
+  function syncCharButtons(){
+    document.querySelectorAll('.char-toggle button').forEach(b => b.classList.toggle('sel', selectedChars.includes(b.dataset.c)));
   }
 
   document.getElementById('f_image').addEventListener('change', (e) => {
@@ -882,7 +908,7 @@
   });
 
   function resetForm(){
-    selectedChar = null; selectedFiles = [];
+    selectedChars = []; selectedFiles = [];
     editingId = null; existingImages = []; removedImages = [];
     document.querySelectorAll('.char-toggle button').forEach(b => b.classList.remove('sel'));
     document.getElementById('f_template').value = '';
@@ -909,7 +935,7 @@
     const platform = document.getElementById('f_platform').value;
     const notes = document.getElementById('f_notes').value.trim();
 
-    if(!selectedChar){ msg.textContent = 'Pick a character.'; msg.className = 'form-msg error'; return; }
+    if(!selectedChars.length){ msg.textContent = 'Pick at least one character.'; msg.className = 'form-msg error'; return; }
     if(!template || !prompt){ msg.textContent = 'Template name and prompt are required.'; msg.className = 'form-msg error'; return; }
 
     btn.disabled = true;
@@ -917,12 +943,13 @@
     let newUrls = [];
     try{
       if(selectedFiles.length){
+        const folder = selectedChars.length > 1 ? 'group' : selectedChars[0].toLowerCase();
         for(let i = 0; i < selectedFiles.length; i++){
           msg.textContent = `Uploading image ${i+1} of ${selectedFiles.length}...`;
           msg.className = 'form-msg';
           const file = selectedFiles[i];
           const ext = file.name.split('.').pop();
-          const path = `${selectedChar.toLowerCase()}/${Date.now()}-${i}.${ext}`;
+          const path = `${folder}/${Date.now()}-${i}.${ext}`;
           const { error: upErr } = await sb.storage.from('images').upload(path, file);
           if(upErr) throw upErr;
           const { data: pub } = sb.storage.from('images').getPublicUrl(path);
@@ -932,7 +959,7 @@
 
       const finalUrls = [...existingImages, ...newUrls];
       const payload = {
-        character: selectedChar,
+        character: selectedChars.join(','),
         template_name: template,
         prompt_text: prompt,
         platform: platform,
