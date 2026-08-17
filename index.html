@@ -25,6 +25,8 @@
     --layla-dim: #8a5f2c;
     --polly: #5b93d6;
     --polly-dim: #33578a;
+    --thea: #d96b8a;
+    --thea-dim: #8a3f54;
     --accent: #e8c34a;
     --radius: 14px;
   }
@@ -101,6 +103,7 @@
   .chip.active[data-c="Mira"]{ background: var(--mira); color: #0e1f14; border-color: var(--mira); }
   .chip.active[data-c="Layla"]{ background: var(--layla); color: #241705; border-color: var(--layla); }
   .chip.active[data-c="Polly"]{ background: var(--polly); color: #0a1626; border-color: var(--polly); }
+  .chip.active[data-c="Thea"]{ background: var(--thea); color: #290d17; border-color: var(--thea); }
   .chip.active[data-c="Group"]{ background: var(--accent); color: #241c05; border-color: var(--accent); }
 
   .search-row{ margin-top: 10px; }
@@ -142,6 +145,7 @@
   .card.Mira{ border-left-color: var(--mira); }
   .card.Layla{ border-left-color: var(--layla); }
   .card.Polly{ border-left-color: var(--polly); }
+  .card.Thea{ border-left-color: var(--thea); }
   .card.Group{ border-left-color: var(--accent); }
 
   .card-media{
@@ -199,6 +203,7 @@
   .tag.character.Mira{ background: rgba(95,174,122,0.28); color: #d8f2e1; }
   .tag.character.Layla{ background: rgba(217,154,78,0.28); color: #fbe4c3; }
   .tag.character.Polly{ background: rgba(91,147,214,0.28); color: #d5e6fa; }
+  .tag.character.Thea{ background: rgba(217,107,138,0.28); color: #fbd9e3; }
   .tag.character.Group{ background: rgba(232,195,74,0.28); color: #fbe9c2; }
   .tag.platform{ background: var(--bg-raised); color: var(--text-dim); border: 1px solid var(--line); }
 
@@ -284,6 +289,7 @@
   .char-toggle button.sel[data-c="Mira"]{ background: rgba(95,174,122,0.18); border-color: var(--mira); color: var(--mira); }
   .char-toggle button.sel[data-c="Layla"]{ background: rgba(217,154,78,0.18); border-color: var(--layla); color: var(--layla); }
   .char-toggle button.sel[data-c="Polly"]{ background: rgba(91,147,214,0.18); border-color: var(--polly); color: var(--polly); }
+  .char-toggle button.sel[data-c="Thea"]{ background: rgba(217,107,138,0.18); border-color: var(--thea); color: var(--thea); }
 
   .file-drop{
     border: 1.5px dashed var(--line); border-radius: 12px; padding: 22px;
@@ -442,7 +448,7 @@
 
 <header>
   <div class="header-top">
-    <h1>Prompt Index<span class="index">Shawna, Mira, Layla & Polly / Template Archive</span></h1>
+    <h1>Prompt Index<span class="index">Shawna, Mira, Layla, Polly & Thea / Template Archive</span></h1>
     <span class="count-tag" id="countTag">— entries</span>
   </div>
   <div id="authRow" style="margin-top:10px; display:none; justify-content:flex-end;">
@@ -454,6 +460,7 @@
     <div class="chip" data-c="Mira" onclick="setFilter('Mira')">Mira</div>
     <div class="chip" data-c="Layla" onclick="setFilter('Layla')">Layla</div>
     <div class="chip" data-c="Polly" onclick="setFilter('Polly')">Polly</div>
+    <div class="chip" data-c="Thea" onclick="setFilter('Thea')">Thea</div>
     <div class="chip" data-c="Group" onclick="setFilter('Group')">Group</div>
   </div>
   <div class="search-row">
@@ -499,6 +506,7 @@
       <button type="button" data-c="Mira" onclick="toggleChar('Mira')">Mira</button>
       <button type="button" data-c="Layla" onclick="toggleChar('Layla')">Layla</button>
       <button type="button" data-c="Polly" onclick="toggleChar('Polly')">Polly</button>
+      <button type="button" data-c="Thea" onclick="toggleChar('Thea')">Thea</button>
     </div>
 
     <label>Template name</label>
